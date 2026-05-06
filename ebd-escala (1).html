@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>EBD Escala · Dominical</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['DM Serif Display', 'serif'],
+            sans: ['DM Sans', 'sans-serif'],
+          },
+          colors: {
+            stone: { 50:'#fafaf9',100:'#f5f5f4',200:'#e7e5e4',300:'#d6d3d1',400:'#a8a29e',500:'#78716c',600:'#57534e',700:'#44403c',800:'#292524',900:'#1c1917' },
+            sage:  { 50:'#f4f7f4',100:'#e6ede7',200:'#ccdccd',300:'#a3c0a5',400:'#739e76',500:'#4e7e52',600:'#3a6440',700:'#2f5033',800:'#27412a',900:'#203623' },
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: #f5f5f4; min-height: 100vh; padding-bottom: 7rem; }
+    h1,h2,h3,.font-serif { font-family: 'DM Serif Display', serif; }
+
+    @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+    @keyframes pulse2  { 0%,100%{opacity:1} 50%{opacity:.45} }
+    @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes spin    { to{transform:rotate(360deg)} }
+
+    .fade-up  { animation: fadeUp  .45s cubic-bezier(.22,1,.36,1) both }
+    .fade-in  { animation: fadeIn  .3s ease both }
+    .slide-up { animation: slideUp .4s  cubic-bezier(.22,1,.36,1) both }
+    .pulsing  { animation: pulse2 1.6s ease-in-out infinite }
+    .spinning { animation: spin .8s linear infinite }
+
+    .delay-1{animation-delay:.07s}.delay-2{animation-delay:.14s}.delay-3{animation-delay:.21s}.delay-4{animation-delay:.28s}
+
+    .card { background:#fff; border-radius:18px; box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05); transition:box-shadow .2s,transform .2s; }
+    .card:active { transform:scale(.985); }
+
+    .badge-confirmado { background:#dcfce7;color:#166534 }
+    .badge-pendente   { background:#fef9c3;color:#854d0e }
+    .badge-disponivel { background:#e0f2fe;color:#075985 }
+    .badge-ausente    { background:#ffe4e6;color:#9f1239 }
+
+    .nav-btn { transition:color .2s,background .2s; border-radius:10px; padding:5px 8px; font-size:.8125rem; font-weight:500 }
+    .nav-btn.active { background:#1c1917; color:#fff }
+    .nav-btn:not(.active) { color:#78716c }
+
+    #modal-overlay { backdrop-filter:blur(4px); background:rgba(28,25,23,.45) }
+    #bottom-sheet  { border-radius:24px 24px 0 0; max-height:92vh; overflow-y:auto }
+
+    .toggle { position:relative;width:42px;height:24px }
+    .toggle input { opacity:0;width:0;height:0 }
+    .slider { position:absolute;inset:0;background:#d6d3d1;border-radius:99px;cursor:pointer;transition:.25s }
+    .slider::before { content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.18) }
+    input:checked+.slider { background:#3a6440 }
+    input:checked+.slider::before { transform:translateX(18px) }
+
+    ::-webkit-scrollbar { width:4px }
+    ::-webkit-scrollbar-track { background:transparent }
+    ::-webkit-scrollbar-thumb { background:#d6d3d1;border-radius:4px }
+
+    .month-chip { padding:6px 14px;border-radius:99px;font-size:.8rem;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .2s;white-space:nowrap }
+    .month-chip.active { background:#1c1917;color:#fff;border-color:#1c1917 }
+    .month-chip:not(.active) { background:#fff;color:#57534e;border-color:#e7e5e4 }
+
+    input,textarea,select { outline:none }
+    input:focus,textarea:focus,select:focus { ring-offset: 0; box-shadow:0 0 0 2.5px #739e76 }
+
+    .inp { width:100%;border:2px solid #e7e5e4;border-radius:14px;padding:.75rem 1rem;font-size:.9rem;color:#1c1917;font-family:'DM Sans',sans-serif;transition:border .2s,box-shadow .2s;background:#fff }
+    .inp:focus { border-color:#739e76;box-shadow:0 0 0 3px #739e7622 }
+    .inp::placeholder { color:#a8a29e }
+
+    .btn-primary { background:#1c1917;color:#fff;font-weight:600;border-radius:14px;padding:.9rem 1.25rem;font-size:.9rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s,transform .15s;border:none;width:100% }
+    .btn-primary:active { transform:scale(.97);background:#292524 }
+    .btn-ghost { background:#f5f5f4;color:#44403c;font-weight:600;border-radius:12px;padding:.65rem 1rem;font-size:.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s;border:none }
+    .btn-ghost:hover { background:#e7e5e4 }
+
+    .sunday-card { border-left:4px solid var(--cls-line,#3a6440) }
+
+    .loading-spinner { border:3px solid #e7e5e4;border-top-color:#3a6440;border-radius:50%;width:28px;height:28px;animation:spin .7s linear infinite;margin:0 auto }
+
+    /* View mode pill */
+    .view-pill { display:inline-flex;align-items:center;gap:6px;background:#fff;border:2px solid #e7e5e4;border-radius:99px;padding:4px 14px 4px 6px;font-size:.78rem;font-weight:600;color:#57534e;cursor:pointer }
+    .view-pill-dot { width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 bg-stone-50/90 backdrop-blur-md border-b border-stone-200/70 px-4 pt-safe">
+    <div class="max-w-lg mx-auto flex items-center justify-between h-14">
+      <div>
+        <p class="text-[10px] font-semibold tracking-widest text-stone-400 uppercase">Escola Bíblica</p>
+        <h1 class="font-serif text-xl text-stone-900 leading-tight">Dominical</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- View mode toggle -->
+        <button id="view-toggle-btn" onclick="openViewModal()" class="view-pill">
+          <span class="view-pill-dot bg-sage-100 text-sage-600">👑</span>
+          <span id="view-label">Admin</span>
+        </button>
+        <button onclick="openSearch()" class="w-9 h-9 flex items-center justify-center rounded-xl text-stone-500 hover:bg-stone-200 transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAV TABS -->
+  <nav class="sticky top-14 z-30 bg-stone-50/90 backdrop-blur-md px-4 py-2 border-b border-stone-200/50">
+    <div class="max-w-lg mx-auto flex gap-1 overflow-x-auto no-scrollbar">
+      <button class="nav-btn active flex-1" onclick="switchTab('proxima',this)" id="tab-btn-proxima">Próxima</button>
+      <button class="nav-btn flex-1" onclick="switchTab('mes',this)" id="tab-btn-mes">Por Mês</button>
+      <button class="nav-btn flex-1" onclick="switchTab('historico',this)" id="tab-btn-historico">Histórico</button>
+      <button class="nav-btn flex-1" onclick="switchTab('classes',this)" id="tab-btn-classes">Classes</button>
+      <button class="nav-btn flex-1 admin-only" onclick="switchTab('config',this)" id="tab-btn-config">Config</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="max-w-lg mx-auto px-4 pt-5">
+
+    <!-- ── TAB: PRÓXIMA ── -->
+    <section id="tab-proxima" class="tab-content">
+      <div id="next-date-card" class="card px-5 py-4 mb-4 fade-up">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-[10px] font-semibold tracking-widest text-stone-400 uppercase mb-1">Próxima EBD</p>
+            <p id="next-date-text" class="font-serif text-xl text-stone-900"></p>
+            <p id="days-away-text" class="text-sm text-stone-500 mt-0.5"></p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-[10px] font-semibold tracking-widest text-stone-400 uppercase mb-1">Horário</p>
+            <p id="header-horario" class="font-serif text-lg text-stone-900"></p>
+            <button class="admin-only text-xs text-sage-600 font-medium mt-0.5" onclick="editConfig()">Editar</button>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="flex justify-between text-xs text-stone-400 mb-1.5">
+            <span>Confirmações</span><span id="confirm-ratio">– / –</span>
+          </div>
+          <div class="w-full bg-stone-100 rounded-full h-2">
+            <div id="confirm-bar" class="bg-sage-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="obs-card" class="card px-5 py-4 mb-4 fade-up delay-1">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-[10px] font-semibold tracking-widest text-stone-400 uppercase">Observação Geral</p>
+          <button onclick="editObservacao()" class="admin-only text-xs text-sage-600 font-semibold">Editar</button>
+        </div>
+        <p id="obs-text" class="text-sm text-stone-700 leading-relaxed italic"></p>
+      </div>
+
+      <div class="flex items-center justify-between mb-3 fade-up delay-2">
+        <h2 class="font-serif text-lg text-stone-900">Escalas por Classe</h2>
+        <button onclick="openAddEscala()" class="admin-only text-xs text-sage-600 font-semibold flex items-center gap-1">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Adicionar
+        </button>
+      </div>
+
+      <div id="class-cards-container" class="space-y-3 fade-up delay-3"></div>
+    </section>
+
+    <!-- ── TAB: POR MÊS ── -->
+    <section id="tab-mes" class="tab-content hidden">
+      <div class="mb-4 fade-up">
+        <h2 class="font-serif text-lg text-stone-900 mb-1">Escala Mensal</h2>
+        <p class="text-sm text-stone-500">Gerencie todos os domingos do mês</p>
+      </div>
+      <!-- Month chips -->
+      <div class="flex gap-2 overflow-x-auto pb-2 mb-4 fade-up delay-1" id="month-chips-container" style="-ms-overflow-style:none;scrollbar-width:none"></div>
+
+      <!-- Add sunday button -->
+      <button onclick="addNewSunday()" class="admin-only w-full mb-4 flex items-center justify-center gap-2 border-2 border-dashed border-stone-300 rounded-2xl py-3.5 text-sm font-semibold text-stone-500 hover:border-sage-400 hover:text-sage-600 transition-all fade-up delay-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Adicionar Domingo ao Mês
+      </button>
+
+      <div id="mes-list" class="space-y-3"></div>
+    </section>
+
+    <!-- ── TAB: HISTÓRICO ── -->
+    <section id="tab-historico" class="tab-content hidden">
+      <div class="mb-4 fade-up">
+        <h2 class="font-serif text-lg text-stone-900 mb-1">Histórico</h2>
+        <p class="text-sm text-stone-500">Registros a partir do uso do app</p>
+      </div>
+      <div id="historico-list" class="space-y-3"></div>
+    </section>
+
+    <!-- ── TAB: CLASSES ── -->
+    <section id="tab-classes" class="tab-content hidden">
+      <div class="flex items-center justify-between mb-4 fade-up">
+        <div>
+          <h2 class="font-serif text-lg text-stone-900 mb-0.5">Turmas</h2>
+          <p class="text-sm text-stone-500">Professores e histórico por classe</p>
+        </div>
+        <button onclick="openAddClass()" class="admin-only btn-ghost text-sage-700">+ Classe</button>
+      </div>
+      <div id="classes-list" class="space-y-3"></div>
+    </section>
+
+    <!-- ── TAB: CONFIG ── -->
+    <section id="tab-config" class="tab-content hidden admin-only">
+      <div class="mb-5 fade-up">
+        <h2 class="font-serif text-lg text-stone-900 mb-1">Configurações</h2>
+        <p class="text-sm text-stone-500">Personalize o app da sua igreja</p>
+      </div>
+      <div id="config-form" class="space-y-4 fade-up delay-1"></div>
+    </section>
+
+  </main>
+
+  <!-- FAB -->
+  <button id="fab" onclick="openAddEscala()"
+    class="admin-only fixed bottom-6 right-4 w-14 h-14 bg-stone-900 text-white rounded-2xl flex items-center justify-center z-50 shadow-xl">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <!-- BOTTOM SHEET -->
+  <div id="modal-overlay" class="fixed inset-0 z-50 hidden items-end justify-center" onclick="closeSheet(event)">
+    <div id="bottom-sheet" class="w-full max-w-lg bg-white shadow-2xl px-5 pb-10 pt-5">
+      <div class="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-5"></div>
+      <div id="sheet-content"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] hidden pointer-events-none">
+    <div id="toast-inner" class="bg-stone-900 text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-xl fade-in"></div>
+  </div>
+
+  <script>
+  /* ================================================================
+     CONSTANTS & DEFAULT CONFIG
+  ================================================================ */
+  const APP_VERSION = '2025-v2';
+  const STORAGE_KEY = 'ebd_app_v2';
+  const INSTALL_DATE = new Date().toISOString().split('T')[0]; // today = start of history
+
+  const DEFAULT_CONFIG = {
+    igrejaNome: 'Igreja EBD',
+    horario: '09:00',
+    diaSemana: 0, // 0 = domingo
+    observacao: '',
+    adminPin: '1234',
+    classes: [
+      { id: 'soldadinhos', label: 'Soldadinhos de Cristo', emoji: '⚔️',  color: '#4e7e52' },
+      { id: 'geracao',     label: 'Geração de Samuel',     emoji: '📖',  color: '#0ea5e9' },
+      { id: 'jovens',      label: 'Jovens Conectados',     emoji: '🔗',  color: '#f59e0b' },
+      { id: 'elshadai',    label: 'El Shadai',             emoji: '🕊️', color: '#a855f7' },
+    ]
+  };
+
+  /* ================================================================
+     STATE
+  ================================================================ */
+  let APP = { config: {}, escalas: {}, historico: [] };
+  let currentMode = 'viewer'; // 'admin' | 'teacher:NAME' | 'viewer'
+  let currentMonth = null; // 'YYYY-MM'
+  let isLoading = false;
+
+  /* ================================================================
+     STORAGE (shared via window.storage API)
+  ================================================================ */
+  async function loadFromStorage() {
+    try {
+      const result = await window.storage.get(STORAGE_KEY, true); // shared
+      if (result && result.value) {
+        const parsed = JSON.parse(result.value);
+        APP = { config: {}, escalas: {}, historico: [], ...parsed };
+        APP.config = { ...DEFAULT_CONFIG, ...APP.config };
+        // Ensure classes exist
+        if (!APP.config.classes || !APP.config.classes.length) APP.config.classes = DEFAULT_CONFIG.classes;
+      } else {
+        // First time — use defaults, no fake history
+        APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
+        await saveToStorage();
+      }
+    } catch (e) {
+      // Storage not available, use localStorage fallback
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) APP = { config: DEFAULT_CONFIG, escalas: {}, historico: [], ...JSON.parse(raw) };
+        else APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
+      } catch(e2) {
+        APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
+      }
+    }
+  }
+
+  async function saveToStorage() {
+    const data = JSON.stringify(APP);
+    try {
+      await window.storage.set(STORAGE_KEY, data, true); // shared = all teachers see it
+    } catch(e) {
+      try { localStorage.setItem(STORAGE_KEY, data); } catch(e2) {}
+    }
+  }
+
+  /* ================================================================
+     UTILITIES
+  ================================================================ */
+  function cls(id) { return APP.config.classes.find(c => c.id === id); }
+
+  function fmtDate(iso) {
+    const [y,m,d] = iso.split('-').map(Number);
+    return new Date(y,m-1,d).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  }
+  function fmtShort(iso) {
+    const [y,m,d] = iso.split('-').map(Number);
+    return new Date(y,m-1,d).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  }
+  function fmtMonthLabel(ym) {
+    const [y,m] = ym.split('-').map(Number);
+    return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  }
+  function daysUntil(iso) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const [y,m,d] = iso.split('-').map(Number);
+    const diff = Math.round((new Date(y,m-1,d)-today)/86400000);
+    if (diff===0) return 'Hoje! 🎉';
+    if (diff===1) return 'Amanhã';
+    if (diff<0) return `${Math.abs(diff)} dias atrás`;
+    return `em ${diff} dias`;
+  }
+  function toIso(date) { return date.toISOString().split('T')[0]; }
+
+  function getNextEBD() {
+    const d = new Date(); const day = d.getDay();
+    const target = APP.config.diaSemana ?? 0;
+    let diff = (target - day + 7) % 7;
+    if (diff === 0) diff = 7;
+    d.setDate(d.getDate()+diff); d.setHours(0,0,0,0);
+    return toIso(d);
+  }
+
+  function getSundaysOfMonth(ym) {
+    const [y,m] = ym.split('-').map(Number);
+    const target = APP.config.diaSemana ?? 0;
+    const sundays = [];
+    const d = new Date(y,m-1,1);
+    while (d.getMonth()===m-1) {
+      if (d.getDay()===target) sundays.push(toIso(new Date(d)));
+      d.setDate(d.getDate()+1);
+    }
+    return sundays;
+  }
+
+  function getAvailableMonths() {
+    const now = new Date();
+    const months = new Set();
+    // Current + 5 future months
+    for (let i=0; i<6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+      months.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
+    // Past months with data
+    Object.keys(APP.escalas).forEach(k => {
+      const ym = k.substring(0,7);
+      months.add(ym);
+    });
+    return [...months].sort();
+  }
+
+  function statusBadge(status) {
+    const map = {
+      confirmado:['badge-confirmado','Confirmado','✓'],
+      pendente:  ['badge-pendente',  'Pendente',  '⏳'],
+      disponivel:['badge-disponivel','Disponível','○'],
+      ausente:   ['badge-ausente',   'Ausente',   '✗'],
+    };
+    const [cls,lbl,ic] = map[status]||map.pendente;
+    return `<span class="${cls} text-[11px] font-semibold px-2.5 py-1 rounded-full">${ic} ${lbl}</span>`;
+  }
+
+  function showToast(msg, duration=2500) {
+    const t=document.getElementById('toast'), ti=document.getElementById('toast-inner');
+    ti.textContent=msg; t.classList.remove('hidden'); t.classList.add('flex');
+    clearTimeout(t._t); t._t=setTimeout(()=>{ t.classList.add('hidden'); t.classList.remove('flex'); },duration);
+  }
+
+  function isAdmin() { return currentMode==='admin'; }
+
+  function updateAdminVisibility() {
+    document.querySelectorAll('.admin-only').forEach(el=>{
+      el.style.display = isAdmin() ? '' : 'none';
+    });
+    document.getElementById('tab-btn-config').style.display = isAdmin() ? '' : 'none';
+    // Update view label
+    if (currentMode==='admin') {
+      document.getElementById('view-label').textContent='Admin';
+      document.querySelector('#view-toggle-btn .view-pill-dot').textContent='👑';
+      document.querySelector('#view-toggle-btn .view-pill-dot').className='view-pill-dot bg-amber-100 text-amber-600';
+    } else if (currentMode.startsWith('teacher:')) {
+      const name = currentMode.replace('teacher:','');
+      document.getElementById('view-label').textContent=name;
+      document.querySelector('#view-toggle-btn .view-pill-dot').textContent='👤';
+      document.querySelector('#view-toggle-btn .view-pill-dot').className='view-pill-dot bg-sky-100 text-sky-600';
+    } else {
+      document.getElementById('view-label').textContent='Visitante';
+      document.querySelector('#view-toggle-btn .view-pill-dot').textContent='👁️';
+      document.querySelector('#view-toggle-btn .view-pill-dot').className='view-pill-dot bg-stone-100 text-stone-500';
+    }
+  }
+
+  /* ================================================================
+     VIEW MODE MODAL
+  ================================================================ */
+  function openViewModal() {
+    // Collect all unique teacher names
+    const names = new Set();
+    Object.values(APP.escalas).forEach(e=>{
+      APP.config.classes.forEach(c=>{ if(e[c.id]?.professor) names.add(e[c.id].professor); });
+    });
+    APP.historico.forEach(e=>{
+      APP.config.classes.forEach(c=>{ if(e[c.id]?.professor) names.add(e[c.id].professor); });
+    });
+
+    const teacherBtns = [...names].map(n=>`
+      <button onclick="setTeacherMode('${n.replace(/'/g,"\\'")}'); closeSheet();"
+        class="w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-stone-100 hover:border-sage-300 transition-all">
+        <span class="w-8 h-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">👤</span>
+        <span class="font-semibold text-stone-800">${n}</span>
+      </button>`).join('');
+
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Modo de Visualização</h2>
+      <p class="text-sm text-stone-400 mb-5">Escolha seu perfil de acesso</p>
+
+      <div class="space-y-2 mb-5">
+        <button onclick="openAdminLogin()" class="w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border-2 ${isAdmin()?'border-amber-400 bg-amber-50':'border-stone-100'} hover:border-amber-300 transition-all">
+          <span class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-sm">👑</span>
+          <div><p class="font-semibold text-stone-800">Administrador</p><p class="text-xs text-stone-400">Acesso total — edição e gerenciamento</p></div>
+        </button>
+        ${teacherBtns}
+        <button onclick="setViewerMode(); closeSheet();" class="w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-stone-100 hover:border-stone-300 transition-all">
+          <span class="w-8 h-8 rounded-full bg-stone-100 text-stone-500 flex items-center justify-center text-sm">👁️</span>
+          <span class="font-semibold text-stone-800">Visitante</span>
+        </button>
+      </div>
+    `);
+  }
+
+  function openAdminLogin() {
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Acesso Admin</h2>
+      <p class="text-sm text-stone-400 mb-5">Digite o PIN de administrador</p>
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">PIN</label>
+      <input id="pin-inp" class="inp mb-2" type="password" placeholder="••••" maxlength="8" />
+      <p id="pin-err" class="text-xs text-rose-500 mb-4 hidden">PIN incorreto. Tente novamente.</p>
+      <button class="btn-primary" onclick="checkPin()">Entrar como Admin</button>
+    `);
+    setTimeout(()=>document.getElementById('pin-inp')?.focus(),300);
+  }
+
+  function checkPin() {
+    const val = document.getElementById('pin-inp').value;
+    if (val === (APP.config.adminPin||'1234')) {
+      currentMode='admin';
+      updateAdminVisibility();
+      closeSheet();
+      renderAll();
+      showToast('✓ Modo administrador ativado');
+    } else {
+      document.getElementById('pin-err').classList.remove('hidden');
+      document.getElementById('pin-inp').value='';
+    }
+  }
+
+  function setTeacherMode(name) {
+    currentMode = 'teacher:'+name;
+    updateAdminVisibility();
+    renderAll();
+    showToast(`👤 Visualizando como ${name}`);
+  }
+  function setViewerMode() {
+    currentMode='viewer';
+    updateAdminVisibility();
+    renderAll();
+  }
+
+  /* ================================================================
+     TABS
+  ================================================================ */
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(s=>s.classList.add('hidden'));
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.remove('hidden');
+    btn.classList.add('active');
+    if (name==='proxima')  renderProxima();
+    if (name==='mes')      renderMes();
+    if (name==='historico') renderHistorico();
+    if (name==='classes')  renderClasses();
+    if (name==='config')   renderConfig();
+  }
+
+  function renderAll() {
+    const active = document.querySelector('.tab-content:not(.hidden)');
+    if (!active) return;
+    const id = active.id.replace('tab-','');
+    if (id==='proxima')   renderProxima();
+    if (id==='mes')       renderMes();
+    if (id==='historico') renderHistorico();
+    if (id==='classes')   renderClasses();
+    if (id==='config')    renderConfig();
+  }
+
+  /* ================================================================
+     RENDER: PRÓXIMA
+  ================================================================ */
+  function renderProxima() {
+    const key = getNextEBD();
+    if (!APP.escalas[key]) {
+      APP.escalas[key] = { date: key };
+      APP.config.classes.forEach(c=>{ APP.escalas[key][c.id]={ professor:'', status:'pendente' }; });
+    }
+    const escala = APP.escalas[key];
+
+    document.getElementById('next-date-text').textContent = fmtDate(key);
+    document.getElementById('days-away-text').textContent = daysUntil(key);
+    document.getElementById('header-horario').textContent = APP.config.horario || '09:00';
+
+    const vals = APP.config.classes.map(c=>escala[c.id]?.status);
+    const confirmed = vals.filter(s=>s==='confirmado').length;
+    document.getElementById('confirm-ratio').textContent = `${confirmed} / ${APP.config.classes.length}`;
+    document.getElementById('confirm-bar').style.width = `${Math.round(confirmed/APP.config.classes.length*100)}%`;
+    document.getElementById('obs-text').textContent = APP.config.observacao||'Nenhuma observação registrada.';
+
+    const container = document.getElementById('class-cards-container');
+    container.innerHTML='';
+    APP.config.classes.forEach((c,i)=>{
+      const slot = escala[c.id]||{ professor:'', status:'pendente' };
+      const isMyClass = currentMode===`teacher:${slot.professor}`;
+      const card=document.createElement('div');
+      card.className=`card px-5 py-4 fade-up${isMyClass?' ring-2 ring-sage-400':''}`;
+      card.style.animationDelay=`${.07*i}s`;
+      card.innerHTML=`
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg" style="background:${c.color}22">${c.emoji}</div>
+            <div class="flex-1 min-w-0">
+              <span class="text-xs font-bold" style="color:${c.color}">${c.label}</span>
+              <p class="text-sm font-semibold text-stone-800 mt-0.5 truncate">
+                ${slot.professor||'<span class="text-stone-400 font-normal italic">Professor não definido</span>'}
+              </p>
+            </div>
+          </div>
+          ${statusBadge(slot.status)}
+        </div>
+        ${isAdmin()||isMyClass?`
+        <div class="flex gap-2 mt-3 pt-3 border-t border-stone-100">
+          ${isAdmin()?`<button onclick="editSlot('${key}','${c.id}')" class="btn-ghost flex-1">✏️ Editar</button>`:''}
+          <button onclick="confirmMyPresence('${key}','${c.id}')" class="btn-ghost flex-1 ${isMyClass?'text-sage-700':''}">${slot.status==='confirmado'?'✓ Confirmado':'✔ Confirmar'}</button>
+        </div>`:''}
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function confirmMyPresence(dateKey, classId) {
+    if (!APP.escalas[dateKey]) return;
+    const cur = APP.escalas[dateKey][classId]?.status;
+    APP.escalas[dateKey][classId].status = cur==='confirmado' ? 'pendente' : 'confirmado';
+    saveToStorage();
+    renderProxima();
+    showToast(cur==='confirmado'?'Status: Pendente':'✓ Presença confirmada!');
+  }
+
+  /* ================================================================
+     RENDER: POR MÊS
+  ================================================================ */
+  function renderMes() {
+    const months = getAvailableMonths();
+    if (!currentMonth) currentMonth = months.find(m=>m>=new Date().toISOString().substring(0,7))||months[0];
+
+    // Chips
+    const chipsEl = document.getElementById('month-chips-container');
+    chipsEl.innerHTML = months.map(m=>`
+      <button class="month-chip ${m===currentMonth?'active':''}" onclick="selectMonth('${m}')">
+        ${fmtMonthLabel(m)}
+      </button>`).join('');
+
+    renderMesList();
+  }
+
+  function selectMonth(ym) {
+    currentMonth = ym;
+    renderMes();
+  }
+
+  function renderMesList() {
+    const list = document.getElementById('mes-list');
+    list.innerHTML='';
+    if (!currentMonth) return;
+
+    const sundays = getSundaysOfMonth(currentMonth);
+
+    // Also include any manually added escalas in this month not in natural sundays
+    const extraKeys = Object.keys(APP.escalas).filter(k=>k.startsWith(currentMonth+'-')&&!sundays.includes(k));
+    const allDays = [...new Set([...sundays,...extraKeys])].sort();
+
+    if (!allDays.length) {
+      list.innerHTML=`<div class="text-center py-12"><div class="text-4xl opacity-30">📅</div><p class="text-stone-400 mt-3 text-sm">Nenhum domingo neste mês</p></div>`;
+      return;
+    }
+
+    allDays.forEach((k,i)=>{
+      if (!APP.escalas[k]) {
+        APP.escalas[k]={ date:k };
+        APP.config.classes.forEach(c=>{ APP.escalas[k][c.id]={ professor:'', status:'pendente' }; });
+      }
+      const e = APP.escalas[k];
+      const confirmed = APP.config.classes.filter(c=>e[c.id]?.status==='confirmado').length;
+      const past = k < toIso(new Date());
+      const card=document.createElement('div');
+      card.className=`card px-5 py-4 fade-up`;
+      card.style.animationDelay=`${.06*i}s`;
+
+      const rows = APP.config.classes.map(c=>{
+        const slot=e[c.id]||{professor:'',status:'pendente'};
+        const isMe = currentMode===`teacher:${slot.professor}`;
+        return `<div class="flex items-center justify-between py-2 ${isMe?'bg-sage-50 -mx-2 px-2 rounded-xl':''}">
+          <span class="text-sm flex items-center gap-2">${c.emoji}
+            <span class="font-medium text-stone-800">${slot.professor||'<span class="text-stone-400 italic font-normal">—</span>'}</span>
+          </span>
+          ${statusBadge(slot.status)}
+        </div>`;
+      }).join('');
+
+      card.innerHTML=`
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="font-serif text-base text-stone-900">${fmtShort(k)}</p>
+            <p class="text-xs text-stone-400 mt-0.5">${daysUntil(k)}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-stone-400">${confirmed}/${APP.config.classes.length} conf.</span>
+            ${isAdmin()?`
+            <button onclick="editEscalaCompleta('${k}')" class="btn-ghost py-1 px-2 text-xs">✏️ Editar</button>
+            <button onclick="deleteEscala('${k}')" class="btn-ghost py-1 px-2 text-xs text-rose-500">🗑</button>`:''}
+          </div>
+        </div>
+        <div class="divide-y divide-stone-100">${rows}</div>
+        ${e.obs?`<p class="text-xs text-stone-400 italic mt-3 pt-3 border-t border-stone-100">📌 ${e.obs}</p>`:''}
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function addNewSunday() {
+    if (!currentMonth) return;
+    // Open date picker for this month
+    const [y,m] = currentMonth.split('-').map(Number);
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Adicionar Data</h2>
+      <p class="text-sm text-stone-400 mb-5">Adicione um domingo ou outra data especial em ${fmtMonthLabel(currentMonth)}</p>
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Data</label>
+      <input id="inp-newdate" class="inp mb-5" type="date" value="${currentMonth}-01"
+        min="${currentMonth}-01" max="${currentMonth}-${new Date(y,m,0).getDate()}" />
+      <button class="btn-primary" onclick="confirmAddDate()">Adicionar</button>
+    `);
+  }
+
+  function confirmAddDate() {
+    const val = document.getElementById('inp-newdate')?.value;
+    if (!val) return;
+    if (!APP.escalas[val]) {
+      APP.escalas[val]={ date:val };
+      APP.config.classes.forEach(c=>{ APP.escalas[val][c.id]={ professor:'', status:'pendente' }; });
+      saveToStorage();
+    }
+    closeSheet();
+    renderMes();
+    showToast('✓ Data adicionada!');
+  }
+
+  function deleteEscala(key) {
+    if (!confirm(`Remover escala de ${fmtShort(key)}?`)) return;
+    delete APP.escalas[key];
+    saveToStorage();
+    renderMes();
+    showToast('Escala removida');
+  }
+
+  /* ================================================================
+     RENDER: HISTÓRICO
+  ================================================================ */
+  function renderHistorico() {
+    const list=document.getElementById('historico-list');
+    list.innerHTML='';
+    // History: only escalas that are strictly in the past AND were saved as history
+    const hist=[...APP.historico].reverse();
+    if (!hist.length) {
+      list.innerHTML=`<div class="text-center py-16 fade-in"><div class="text-5xl opacity-20">📋</div>
+        <p class="text-stone-400 mt-3 text-sm font-medium">Nenhum histórico ainda</p>
+        <p class="text-stone-300 text-xs mt-1">O histórico será registrado<br>após cada EBD realizada</p></div>`;
+      return;
+    }
+    hist.forEach((h,i)=>{
+      const card=document.createElement('div');
+      card.className='card px-5 py-4 fade-up';
+      card.style.animationDelay=`${.05*i}s`;
+      const rows=APP.config.classes.map(c=>{
+        const s=h[c.id]||{professor:'—',status:'disponivel'};
+        return `<div class="flex items-center justify-between py-1.5">
+          <span class="text-sm flex items-center gap-2">${c.emoji} <span class="font-medium text-stone-800">${s.professor||'—'}</span></span>
+          ${statusBadge(s.status)}
+        </div>`;
+      }).join('');
+      card.innerHTML=`
+        <div class="flex items-center justify-between mb-3">
+          <p class="font-serif text-base text-stone-900">${fmtShort(h.date)}</p>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-stone-400">${APP.config.classes.filter(c=>h[c.id]?.status==='confirmado').length}/${APP.config.classes.length} conf.</span>
+            ${isAdmin()?`<button onclick="deleteHistorico('${h.date}')" class="btn-ghost py-1 px-2 text-xs text-rose-500">🗑</button>`:''}
+          </div>
+        </div>
+        <div class="divide-y divide-stone-100">${rows}</div>
+        ${h.obs?`<p class="text-xs text-stone-400 italic mt-3 pt-3 border-t border-stone-100">📌 ${h.obs}</p>`:''}
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function deleteHistorico(date) {
+    APP.historico = APP.historico.filter(h=>h.date!==date);
+    saveToStorage();
+    renderHistorico();
+    showToast('Registro removido');
+  }
+
+  /* ================================================================
+     RENDER: CLASSES
+  ================================================================ */
+  function renderClasses() {
+    const list=document.getElementById('classes-list');
+    list.innerHTML='';
+    APP.config.classes.forEach((c,i)=>{
+      // Count how many times this class appears in history
+      const histCount=APP.historico.filter(h=>h[c.id]?.professor).length;
+      const card=document.createElement('div');
+      card.className='card px-5 py-4 fade-up cursor-pointer';
+      card.style.animationDelay=`${.07*i}s`;
+      card.innerHTML=`
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style="background:${c.color}22">${c.emoji}</div>
+          <div class="flex-1">
+            <p class="font-semibold text-stone-900">${c.label}</p>
+            <p class="text-xs text-stone-500 mt-0.5">${histCount} registro${histCount!==1?'s':''} no histórico</p>
+          </div>
+          <div class="flex items-center gap-2">
+            ${isAdmin()?`<button onclick="event.stopPropagation();editClass('${c.id}')" class="btn-ghost py-1 px-2 text-xs">✏️</button>`:''}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      `;
+      card.addEventListener('click',()=>openClassDetail(c));
+      list.appendChild(card);
+    });
+  }
+
+  function openClassDetail(c) {
+    const history=APP.historico.filter(h=>h[c.id]);
+    const rows=history.length
+      ? [...history].reverse().map(h=>{
+          const s=h[c.id];
+          return `<div class="flex items-center justify-between py-2.5 border-b border-stone-100 last:border-0">
+            <div><p class="text-sm font-medium text-stone-800">${s.professor||'—'}</p>
+                 <p class="text-xs text-stone-400">${fmtShort(h.date)}</p></div>
+            ${statusBadge(s.status)}</div>`;
+        }).join('')
+      : `<p class="text-sm text-stone-400 py-6 text-center italic">Sem registros ainda.<br>O histórico aparecerá aqui após cada EBD.</p>`;
+
+    openSheet(`
+      <div class="flex items-center gap-4 mb-5">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style="background:${c.color}22">${c.emoji}</div>
+        <div>
+          <h2 class="font-serif text-xl text-stone-900">${c.label}</h2>
+          <p class="text-sm text-stone-400">Histórico de professores</p>
+        </div>
+      </div>
+      <div>${rows}</div>
+    `);
+  }
+
+  function editClass(id) {
+    const c=APP.config.classes.find(x=>x.id===id);
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Editar Classe</h2>
+      <p class="text-sm text-stone-400 mb-5">Altere as informações da turma</p>
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Nome da Classe</label>
+      <input id="cls-label" class="inp mb-4" value="${c.label}" />
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Emoji</label>
+      <input id="cls-emoji" class="inp mb-4" value="${c.emoji}" maxlength="4" />
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Cor (hex)</label>
+      <input id="cls-color" class="inp mb-5" type="color" value="${c.color}" style="height:48px;padding:4px 8px" />
+      <div class="flex gap-2">
+        <button class="btn-ghost flex-1 text-rose-500" onclick="deleteClass('${id}')">Excluir Classe</button>
+        <button class="btn-primary flex-1" onclick="saveClass('${id}')">Salvar</button>
+      </div>
+    `);
+  }
+
+  function saveClass(id) {
+    const c=APP.config.classes.find(x=>x.id===id);
+    c.label=document.getElementById('cls-label').value.trim()||c.label;
+    c.emoji=document.getElementById('cls-emoji').value.trim()||c.emoji;
+    c.color=document.getElementById('cls-color').value||c.color;
+    saveToStorage();
+    closeSheet();
+    renderClasses();
+    showToast('✓ Classe atualizada!');
+  }
+
+  function deleteClass(id) {
+    if (!confirm('Excluir esta classe? Esta ação não pode ser desfeita.')) return;
+    APP.config.classes=APP.config.classes.filter(c=>c.id!==id);
+    saveToStorage();
+    closeSheet();
+    renderClasses();
+    showToast('Classe excluída');
+  }
+
+  function openAddClass() {
+    const newId='cls_'+Date.now();
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Nova Classe</h2>
+      <p class="text-sm text-stone-400 mb-5">Adicione uma nova turma à EBD</p>
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Nome da Classe</label>
+      <input id="ncls-label" class="inp mb-4" placeholder="Ex: Berçário" />
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Emoji</label>
+      <input id="ncls-emoji" class="inp mb-4" placeholder="🌟" maxlength="4" />
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Cor</label>
+      <input id="ncls-color" class="inp mb-5" type="color" value="#4e7e52" style="height:48px;padding:4px 8px" />
+      <button class="btn-primary" onclick="confirmAddClass('${newId}')">Adicionar Classe</button>
+    `);
+  }
+
+  function confirmAddClass(id) {
+    const label=document.getElementById('ncls-label').value.trim();
+    if (!label) { showToast('⚠ Digite o nome da classe'); return; }
+    APP.config.classes.push({
+      id, label,
+      emoji: document.getElementById('ncls-emoji').value.trim()||'📚',
+      color: document.getElementById('ncls-color').value||'#4e7e52'
+    });
+    saveToStorage();
+    closeSheet();
+    renderClasses();
+    showToast('✓ Classe adicionada!');
+  }
+
+  /* ================================================================
+     RENDER: CONFIG
+  ================================================================ */
+  function renderConfig() {
+    const f=document.getElementById('config-form');
+    f.innerHTML=`
+      <div class="card px-5 py-4 fade-up">
+        <h3 class="font-serif text-base text-stone-900 mb-4">Configurações Gerais</h3>
+        <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Nome da Igreja</label>
+        <input id="cfg-nome" class="inp mb-4" value="${APP.config.igrejaNome||''}" placeholder="Ex: Igreja EBD" />
+        <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Horário da EBD</label>
+        <input id="cfg-horario" class="inp mb-4" type="time" value="${APP.config.horario||'09:00'}" />
+        <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Dia da Semana</label>
+        <select id="cfg-dia" class="inp mb-5" style="background:#fff">
+          ${['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map((d,i)=>`<option value="${i}" ${APP.config.diaSemana===i?'selected':''}>${d}</option>`).join('')}
+        </select>
+        <button class="btn-primary" onclick="saveGeneralConfig()">💾 Salvar Configurações</button>
+      </div>
+
+      <div class="card px-5 py-4 fade-up delay-1">
+        <h3 class="font-serif text-base text-stone-900 mb-4">Segurança</h3>
+        <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">PIN de Admin (atual: ${APP.config.adminPin||'1234'})</label>
+        <input id="cfg-pin" class="inp mb-4" type="password" placeholder="Novo PIN..." maxlength="8" />
+        <button class="btn-primary" onclick="changePin()">🔐 Alterar PIN</button>
+      </div>
+
+      <div class="card px-5 py-4 fade-up delay-2">
+        <h3 class="font-serif text-base text-stone-900 mb-3">Registrar Histórico</h3>
+        <p class="text-sm text-stone-500 mb-4">Mover a escala de um domingo passado para o histórico oficial</p>
+        <button class="btn-ghost w-full text-sage-700" onclick="archiveEscala()">📦 Arquivar EBD Realizada</button>
+      </div>
+
+      <div class="card px-5 py-4 fade-up delay-3">
+        <h3 class="font-serif text-base text-stone-900 mb-3">Acesso dos Professores</h3>
+        <p class="text-sm text-stone-500 mb-3">Professores acessam o app pelo mesmo link. Para entrar no modo deles, basta tocar em <strong>"Admin"</strong> no topo e escolher o próprio nome.</p>
+        <div class="bg-sage-50 rounded-2xl px-4 py-3 text-xs text-sage-700 font-medium">
+          💡 Os dados são compartilhados em tempo real — qualquer professor vê as escalas atualizadas instantaneamente.
+        </div>
+      </div>
+    `;
+  }
+
+  function saveGeneralConfig() {
+    APP.config.igrejaNome = document.getElementById('cfg-nome').value.trim()||'Igreja EBD';
+    APP.config.horario    = document.getElementById('cfg-horario').value||'09:00';
+    APP.config.diaSemana  = parseInt(document.getElementById('cfg-dia').value)||0;
+    saveToStorage();
+    renderProxima();
+    showToast('✓ Configurações salvas!');
+  }
+
+  function changePin() {
+    const val=document.getElementById('cfg-pin').value.trim();
+    if (!val) { showToast('⚠ Digite um PIN'); return; }
+    APP.config.adminPin=val;
+    saveToStorage();
+    document.getElementById('cfg-pin').value='';
+    renderConfig();
+    showToast('✓ PIN alterado com sucesso!');
+  }
+
+  function archiveEscala() {
+    // Show list of past escalas not yet in historico
+    const histDates=APP.historico.map(h=>h.date);
+    const today=toIso(new Date());
+    const past=Object.keys(APP.escalas).filter(k=>k<today&&!histDates.includes(k)).sort().reverse();
+
+    if (!past.length) {
+      showToast('ℹ Nenhuma escala passada para arquivar');
+      return;
+    }
+
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Arquivar EBD</h2>
+      <p class="text-sm text-stone-400 mb-5">Mover para o histórico oficial</p>
+      <div class="space-y-2">
+        ${past.map(k=>`
+          <button onclick="confirmArchive('${k}')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-stone-100 hover:border-sage-300 transition-all">
+            <div class="text-left">
+              <p class="font-semibold text-stone-800">${fmtShort(k)}</p>
+              <p class="text-xs text-stone-400">${APP.config.classes.filter(c=>APP.escalas[k]?.[c.id]?.status==='confirmado').length}/${APP.config.classes.length} confirmados</p>
+            </div>
+            <span class="text-xs font-semibold text-sage-600">Arquivar →</span>
+          </button>`).join('')}
+      </div>
+    `);
+  }
+
+  function confirmArchive(key) {
+    const escala=APP.escalas[key];
+    if (!escala) return;
+    const entry={ date:key };
+    APP.config.classes.forEach(c=>{ entry[c.id]=escala[c.id]||{professor:'',status:'disponivel'}; });
+    entry.obs=escala.obs||'';
+    APP.historico.push(entry);
+    APP.historico.sort((a,b)=>a.date.localeCompare(b.date));
+    delete APP.escalas[key];
+    saveToStorage();
+    closeSheet();
+    renderConfig();
+    showToast('✓ Escala arquivada no histórico!');
+  }
+
+  /* ================================================================
+     EDIT SLOT
+  ================================================================ */
+  function editSlot(dateKey, classId) {
+    const c=APP.config.classes.find(x=>x.id===classId);
+    const slot=APP.escalas[dateKey]?.[classId]||{professor:'',status:'pendente'};
+    let _sel=slot.status;
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">${c.emoji} ${c.label}</h2>
+      <p class="text-sm text-stone-400 mb-5">${fmtDate(dateKey)}</p>
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Professor(a)</label>
+      <input id="inp-professor" class="inp mb-5" placeholder="Nome do professor..." value="${slot.professor}" />
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-3">Status</label>
+      <div class="grid grid-cols-2 gap-2 mb-6" id="status-options">
+        ${['confirmado','pendente','disponivel','ausente'].map(s=>`
+          <button onclick="selectStatus_slot('${s}')" data-status="${s}"
+            class="status-opt flex items-center gap-2 px-4 py-3 rounded-2xl border-2 text-sm font-semibold transition-all
+            ${s===slot.status?'border-stone-900 bg-stone-900 text-white':'border-stone-200 text-stone-700'}">
+            ${s==='confirmado'?'✓ Confirmado':s==='pendente'?'⏳ Pendente':s==='disponivel'?'○ Disponível':'✗ Ausente'}
+          </button>`).join('')}
+      </div>
+      <button class="btn-primary" onclick="saveSlot('${dateKey}','${classId}')">Salvar Escala</button>
+    `);
+  }
+
+  let _slotStatus=null;
+  function selectStatus_slot(s) {
+    _slotStatus=s;
+    document.querySelectorAll('.status-opt').forEach(b=>{
+      const a=b.dataset.status===s;
+      b.className=b.className.replace(/border-stone-\S+|bg-stone-\S+|text-white|text-stone-700/g,'');
+      b.classList.add(a?'border-stone-900':'border-stone-200');
+      b.classList.add(a?'bg-stone-900':'');
+      b.classList.add(a?'text-white':'text-stone-700');
+    });
+  }
+
+  function saveSlot(dateKey, classId) {
+    if (!APP.escalas[dateKey]) { APP.escalas[dateKey]={ date:dateKey }; }
+    const prof=document.getElementById('inp-professor').value.trim();
+    const status=_slotStatus||APP.escalas[dateKey]?.[classId]?.status||'pendente';
+    APP.escalas[dateKey][classId]={ professor:prof, status };
+    saveToStorage();
+    closeSheet();
+    renderProxima();
+    showToast('✓ Escala salva!');
+  }
+
+  /* ================================================================
+     EDIT ESCALA COMPLETA (from month view)
+  ================================================================ */
+  function editEscalaCompleta(key) {
+    const e=APP.escalas[key]||{ date:key };
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Escala Completa</h2>
+      <p class="text-sm text-stone-400 mb-5">${fmtDate(key)}</p>
+      ${APP.config.classes.map(c=>`
+        <div class="mb-4">
+          <label class="flex items-center gap-2 text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">
+            <span>${c.emoji}</span> ${c.label}
+          </label>
+          <div class="flex gap-2">
+            <input id="inp-${c.id}-prof" class="inp flex-1" placeholder="Nome do professor..." value="${e[c.id]?.professor||''}" />
+            <select id="inp-${c.id}-stat" class="inp" style="background:#fff;max-width:140px">
+              ${['pendente','confirmado','disponivel','ausente'].map(s=>`<option value="${s}" ${(e[c.id]?.status||'pendente')===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+            </select>
+          </div>
+        </div>`).join('')}
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2 mt-2">Observação</label>
+      <textarea id="inp-obs-esc" rows="3" placeholder="Avisos especiais para este domingo..."
+        class="inp mb-5 resize-none">${e.obs||''}</textarea>
+      <div class="flex gap-2">
+        <button class="btn-ghost flex-1" onclick="closeSheet()">Cancelar</button>
+        <button class="btn-primary flex-1" onclick="saveEscalaCompleta('${key}')">💾 Salvar Tudo</button>
+      </div>
+    `);
+  }
+
+  function saveEscalaCompleta(key) {
+    if (!APP.escalas[key]) APP.escalas[key]={ date:key };
+    APP.config.classes.forEach(c=>{
+      APP.escalas[key][c.id]={
+        professor: document.getElementById(`inp-${c.id}-prof`)?.value.trim()||'',
+        status:    document.getElementById(`inp-${c.id}-stat`)?.value||'pendente',
+      };
+    });
+    APP.escalas[key].obs=document.getElementById('inp-obs-esc')?.value.trim()||'';
+    saveToStorage();
+    closeSheet();
+    renderMes();
+    showToast('✓ Escala completa salva!');
+  }
+
+  /* ================================================================
+     ADD NOVA ESCALA (FAB)
+  ================================================================ */
+  function openAddEscala() {
+    const key=getNextEBD();
+    editEscalaCompleta(key);
+  }
+
+  /* ================================================================
+     EDIT CONFIG shortcut
+  ================================================================ */
+  function editConfig() {
+    if (!isAdmin()) { showToast('⚠ Acesso apenas para administrador'); return; }
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Horário & Dia</h2>
+      <p class="text-sm text-stone-400 mb-5">Configure o horário da EBD</p>
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Horário</label>
+      <input id="ec-horario" class="inp mb-4" type="time" value="${APP.config.horario||'09:00'}" />
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Dia da Semana</label>
+      <select id="ec-dia" class="inp mb-5" style="background:#fff">
+        ${['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map((d,i)=>`<option value="${i}" ${APP.config.diaSemana===i?'selected':''}>${d}</option>`).join('')}
+      </select>
+      <button class="btn-primary" onclick="saveQuickConfig()">Salvar</button>
+    `);
+  }
+
+  function saveQuickConfig() {
+    APP.config.horario=document.getElementById('ec-horario').value||'09:00';
+    APP.config.diaSemana=parseInt(document.getElementById('ec-dia').value)||0;
+    saveToStorage();
+    closeSheet();
+    renderProxima();
+    showToast('✓ Horário atualizado!');
+  }
+
+  /* ================================================================
+     OBSERVAÇÃO
+  ================================================================ */
+  function editObservacao() {
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Observação Geral</h2>
+      <p class="text-sm text-stone-400 mb-5">Informações para toda a equipe</p>
+      <textarea id="inp-obs" rows="5" placeholder="Ex: Abertura: classe Soldadinhos. Encerramento: oração coletiva."
+        class="inp mb-5 resize-none">${APP.config.observacao||''}</textarea>
+      <button class="btn-primary" onclick="saveObservacao()">Salvar Observação</button>
+    `);
+  }
+
+  function saveObservacao() {
+    APP.config.observacao=document.getElementById('inp-obs').value.trim();
+    saveToStorage();
+    closeSheet();
+    renderProxima();
+    showToast('✓ Observação salva!');
+  }
+
+  /* ================================================================
+     SEARCH
+  ================================================================ */
+  function openSearch() {
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-5">Buscar Escalas</h2>
+      <input id="search-inp" class="inp mb-4" type="search" placeholder="Nome do professor ou data..."
+        oninput="doSearch(this.value)" autofocus />
+      <div id="search-results" class="text-sm text-stone-400 text-center pt-4 italic">Digite para buscar…</div>
+    `);
+    setTimeout(()=>document.getElementById('search-inp')?.focus(),300);
+  }
+
+  function doSearch(q) {
+    const res=document.getElementById('search-results');
+    if (!q.trim()) { res.innerHTML='<p class="italic text-stone-400 text-center pt-4">Digite para buscar…</p>'; return; }
+    const matches=[];
+    const all=[...APP.historico,...Object.values(APP.escalas)];
+    all.forEach(e=>{
+      APP.config.classes.forEach(c=>{
+        const s=e[c.id];
+        if (s?.professor?.toLowerCase().includes(q.toLowerCase())) {
+          matches.push(`<div class="card px-4 py-3 flex items-center justify-between mb-2">
+            <div><p class="font-medium text-stone-800">${s.professor}</p>
+                 <p class="text-xs text-stone-400">${c.emoji} ${c.label} · ${fmtShort(e.date)}</p></div>
+            ${statusBadge(s.status)}</div>`);
+        }
+      });
+    });
+    res.innerHTML=matches.length?matches.join(''):'<p class="italic text-stone-400 text-center pt-4">Nenhum resultado</p>';
+  }
+
+  /* ================================================================
+     SHEET HELPERS
+  ================================================================ */
+  function openSheet(html) {
+    _slotStatus=null;
+    const overlay=document.getElementById('modal-overlay');
+    const sheet=document.getElementById('bottom-sheet');
+    document.getElementById('sheet-content').innerHTML=html;
+    overlay.classList.remove('hidden'); overlay.classList.add('flex');
+    sheet.classList.add('slide-up');
+    setTimeout(()=>sheet.classList.remove('slide-up'),400);
+  }
+
+  function closeSheet(e) {
+    if (e&&e.target!==document.getElementById('modal-overlay')) return;
+    document.getElementById('modal-overlay').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.remove('flex');
+  }
+
+  /* ================================================================
+     INIT
+  ================================================================ */
+  async function init() {
+    await loadFromStorage();
+    updateAdminVisibility();
+    renderProxima();
+
+    // Set current month
+    const now=new Date();
+    currentMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  init();
+  </script>
+</body>
+</html>
