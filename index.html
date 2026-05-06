@@ -5,6 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>EBD Escala · Dominical</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK via CDN (module) — carregado antes do script principal -->
+  <script type="module" id="firebase-bootstrap">
+    import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getFirestore, doc, getDoc, setDoc }    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey:            "AIzaSyBzlD2wNAazD2CA8W0CJqc062AJ3o5Zn6A",
+      authDomain:        "escala-ebd-8875a.firebaseapp.com",
+      projectId:         "escala-ebd-8875a",
+      storageBucket:     "escala-ebd-8875a.firebasestorage.app",
+      messagingSenderId: "324358454357",
+      appId:             "1:324358454357:web:c1096ce6989ae08ad828dc",
+      measurementId:     "G-CVT3Z9SDV4"
+    };
+
+    const _fbApp = initializeApp(firebaseConfig);
+    const _db    = getFirestore(_fbApp);
+    const _docRef = doc(_db, 'dados_app', 'ebd_app_v2');
+
+    // Expõe helpers no window para o script não-module aceder
+    window._fbLoadApp = async function() {
+      const snap = await getDoc(_docRef);
+      return snap.exists() ? snap.data() : null;
+    };
+    window._fbSaveApp = async function(data) {
+      await setDoc(_docRef, data, { merge: false });
+    };
+    window._fbReady = true;
+
+    // Dispara evento para o script principal saber que o Firebase está pronto
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
@@ -275,40 +307,126 @@
   let isLoading = false;
 
   /* ================================================================
-     STORAGE (shared via window.storage API)
+     LOADING OVERLAY HELPERS
   ================================================================ */
+  function showLoading(msg = 'Carregando dados…') {
+    let el = document.getElementById('fb-loading-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'fb-loading-overlay';
+      el.style.cssText = [
+        'position:fixed','inset:0','z-index:9999',
+        'background:rgba(250,250,249,.92)','backdrop-filter:blur(6px)',
+        'display:flex','flex-direction:column',
+        'align-items:center','justify-content:center','gap:16px',
+        'font-family:DM Sans,sans-serif'
+      ].join(';');
+      el.innerHTML = `
+        <div style="border:3px solid #e7e5e4;border-top-color:#3a6440;border-radius:50%;
+                    width:36px;height:36px;animation:spin .7s linear infinite"></div>
+        <p id="fb-loading-msg" style="font-size:.9rem;color:#57534e;font-weight:500"></p>`;
+      document.body.appendChild(el);
+    }
+    document.getElementById('fb-loading-msg').textContent = msg;
+    el.style.display = 'flex';
+  }
+
+  function hideLoading() {
+    const el = document.getElementById('fb-loading-overlay');
+    if (el) el.style.display = 'none';
+  }
+
+  function showOfflineBanner(show = true) {
+    let el = document.getElementById('fb-offline-banner');
+    if (!el && show) {
+      el = document.createElement('div');
+      el.id = 'fb-offline-banner';
+      el.style.cssText = [
+        'position:fixed','top:0','left:0','right:0','z-index:9998',
+        'background:#fef2f2','color:#991b1b','font-size:.78rem','font-weight:600',
+        'text-align:center','padding:6px 12px','font-family:DM Sans,sans-serif'
+      ].join(';');
+      el.textContent = '⚠️ Modo offline — alterações salvas localmente e sincronizadas ao reconectar.';
+      document.body.appendChild(el);
+    }
+    if (el) el.style.display = show ? 'block' : 'none';
+  }
+
+  /* ================================================================
+     FIRESTORE PERSISTENCE  (with localStorage offline fallback)
+  ================================================================ */
+  async function waitForFirebase(timeout = 5000) {
+    if (window._fbReady) return true;
+    return new Promise(resolve => {
+      const t = setTimeout(() => resolve(false), timeout);
+      window.addEventListener('firebase-ready', () => { clearTimeout(t); resolve(true); }, { once: true });
+    });
+  }
+
   async function loadFromStorage() {
-    try {
-      const result = await window.storage.get(STORAGE_KEY, true); // shared
-      if (result && result.value) {
-        const parsed = JSON.parse(result.value);
-        APP = { config: {}, escalas: {}, historico: [], ...parsed };
-        APP.config = { ...DEFAULT_CONFIG, ...APP.config };
-        // Ensure classes exist
-        if (!APP.config.classes || !APP.config.classes.length) APP.config.classes = DEFAULT_CONFIG.classes;
-      } else {
-        // First time — use defaults, no fake history
-        APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
-        await saveToStorage();
-      }
-    } catch (e) {
-      // Storage not available, use localStorage fallback
+    showLoading('Conectando ao Firebase…');
+    const fbOk = await waitForFirebase();
+
+    if (fbOk) {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) APP = { config: DEFAULT_CONFIG, escalas: {}, historico: [], ...JSON.parse(raw) };
-        else APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
-      } catch(e2) {
-        APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
+        showLoading('Carregando escalas…');
+        const data = await window._fbLoadApp();
+        if (data && Object.keys(data).length) {
+          APP = { config: {}, escalas: {}, historico: [], ...data };
+          APP.config = { ...DEFAULT_CONFIG, ...APP.config };
+          if (!APP.config.classes || !APP.config.classes.length) APP.config.classes = DEFAULT_CONFIG.classes;
+          // Persist locally as backup
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(APP)); } catch(_) {}
+        } else {
+          // Primeira utilização — inicializa com defaults
+          APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
+          await saveToStorage();
+        }
+        showOfflineBanner(false);
+        hideLoading();
+        return;
+      } catch (err) {
+        console.warn('[EBD] Firestore falhou, usando fallback local:', err);
       }
     }
+
+    // ── Offline / Firebase indisponível ──
+    showOfflineBanner(true);
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        APP = { config: {}, escalas: {}, historico: [], ...parsed };
+        APP.config = { ...DEFAULT_CONFIG, ...APP.config };
+        if (!APP.config.classes || !APP.config.classes.length) APP.config.classes = DEFAULT_CONFIG.classes;
+      } else {
+        APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
+      }
+    } catch (_) {
+      APP = { config: { ...DEFAULT_CONFIG }, escalas: {}, historico: [], installDate: INSTALL_DATE };
+    }
+    hideLoading();
   }
 
   async function saveToStorage() {
-    const data = JSON.stringify(APP);
-    try {
-      await window.storage.set(STORAGE_KEY, data, true); // shared = all teachers see it
-    } catch(e) {
-      try { localStorage.setItem(STORAGE_KEY, data); } catch(e2) {}
+    // Snapshot limpo (sem funções, sem undefined)
+    const snapshot = JSON.parse(JSON.stringify(APP));
+
+    // 1) Salva localmente imediatamente (resposta instantânea)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch(_) {}
+
+    // 2) Persiste no Firestore de forma assíncrona
+    const fbOk = await waitForFirebase(3000);
+    if (fbOk) {
+      try {
+        await window._fbSaveApp(snapshot);
+        showOfflineBanner(false);
+      } catch (err) {
+        console.warn('[EBD] Falha ao salvar no Firestore, dados mantidos localmente:', err);
+        showOfflineBanner(true);
+      }
+    } else {
+      showOfflineBanner(true);
     }
   }
 
