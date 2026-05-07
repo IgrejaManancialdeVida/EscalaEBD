@@ -722,6 +722,46 @@
   ================================================================ */
   function cls(id) { return APP.config.classes.find(c => c.id === id); }
 
+  /* ── Professor photo helpers ── */
+  function getProfPhoto(nome) {
+    if (!nome) return null;
+    return APP.config.professores?.[nome]?.foto || null;
+  }
+
+  function getInitials(nome) {
+    if (!nome) return '?';
+    const parts = nome.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0,2).toUpperCase();
+    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+
+  function avatarHTML(nome, size=36) {
+    const foto = getProfPhoto(nome);
+    const radius = Math.round(size * 0.3);
+    if (foto) {
+      return `<img src="${foto}" alt="${nome}" style="width:${size}px;height:${size}px;border-radius:${radius}px;object-fit:cover;flex-shrink:0;border:2px solid rgba(255,255,255,.8)" />`;
+    }
+    const colors = ['#4e7e52','#0ea5e9','#f59e0b','#a855f7','#dc2626','#0891b2','#059669','#d97706','#7c3aed','#db2777'];
+    let hash = 0;
+    for (let i=0; i<(nome||'').length; i++) hash = (hash*31 + nome.charCodeAt(i)) & 0xffffffff;
+    const bg = colors[Math.abs(hash) % colors.length];
+    const initials = getInitials(nome);
+    const fontSize = size <= 28 ? Math.round(size*0.38) : Math.round(size*0.36);
+    return `<div style="width:${size}px;height:${size}px;border-radius:${radius}px;background:${bg};color:#fff;display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;font-weight:700;flex-shrink:0;border:2px solid rgba(255,255,255,.6);font-family:'DM Sans',sans-serif">${initials}</div>`;
+  }
+
+  function saveProfPhoto(nome, dataUrl) {
+    if (!APP.config.professores) APP.config.professores = {};
+    if (!APP.config.professores[nome]) APP.config.professores[nome] = {};
+    APP.config.professores[nome].foto = dataUrl;
+  }
+
+  function deleteProfPhoto(nome) {
+    if (APP.config.professores?.[nome]) {
+      delete APP.config.professores[nome].foto;
+    }
+  }
+
   function fmtDate(iso) {
     const [y,m,d] = iso.split('-').map(Number);
     return new Date(y,m-1,d).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
@@ -839,7 +879,7 @@
     const teacherBtns = [...names].map(n=>`
       <button onclick="setTeacherMode('${n.replace(/'/g,"\\'")}'); closeSheet();"
         class="w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-stone-100 hover:border-sage-300 transition-all">
-        <span class="w-8 h-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">👤</span>
+        ${avatarHTML(n, 32)}
         <span class="font-semibold text-stone-800">${n}</span>
       </button>`).join('');
 
@@ -1009,9 +1049,12 @@
             <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style="background:${c.color}22">${c.logo&&document.getElementById(c.logo)?`<img src="${document.getElementById(c.logo).src}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" />`:c.emoji}</div>
             <div class="flex-1 min-w-0">
               <span class="text-xs font-bold" style="color:${c.color}">${c.label}</span>
-              <p class="text-sm font-semibold text-stone-800 mt-0.5 truncate">
-                ${slot.professor||'<span class="text-stone-400 font-normal italic">Professor não definido</span>'}
-              </p>
+              <div class="flex items-center gap-2 mt-1">
+                ${slot.professor ? avatarHTML(slot.professor, 28) : ''}
+                <p class="text-sm font-semibold text-stone-800 truncate">
+                  ${slot.professor||'<span class="text-stone-400 font-normal italic">Professor não definido</span>'}
+                </p>
+              </div>
             </div>
           </div>
           ${statusBadge(slot.status)}
@@ -1090,6 +1133,7 @@
         const isMe = currentMode===`teacher:${slot.professor}`;
         return `<div class="flex items-center justify-between py-2 ${isMe?'bg-sage-50 -mx-2 px-2 rounded-xl':''}">
           <span class="text-sm flex items-center gap-2">${c.emoji}
+            ${slot.professor ? avatarHTML(slot.professor, 24) : ''}
             <span class="font-medium text-stone-800">${slot.professor||'<span class="text-stone-400 italic font-normal">—</span>'}</span>
           </span>
           ${statusBadge(slot.status)}
@@ -1172,7 +1216,10 @@
       const rows=APP.config.classes.map(c=>{
         const s=h[c.id]||{professor:'—',status:'disponivel'};
         return `<div class="flex items-center justify-between py-1.5">
-          <span class="text-sm flex items-center gap-2">${c.emoji} <span class="font-medium text-stone-800">${s.professor||'—'}</span></span>
+          <span class="text-sm flex items-center gap-2">${c.emoji}
+            ${s.professor && s.professor!=='—' ? avatarHTML(s.professor, 24) : ''}
+            <span class="font-medium text-stone-800">${s.professor||'—'}</span>
+          </span>
           ${statusBadge(s.status)}
         </div>`;
       }).join('');
@@ -1234,8 +1281,11 @@
       ? [...history].reverse().map(h=>{
           const s=h[c.id];
           return `<div class="flex items-center justify-between py-2.5 border-b border-stone-100 last:border-0">
-            <div><p class="text-sm font-medium text-stone-800">${s.professor||'—'}</p>
-                 <p class="text-xs text-stone-400">${fmtShort(h.date)}</p></div>
+            <div class="flex items-center gap-2">
+              ${s.professor ? avatarHTML(s.professor, 32) : ''}
+              <div><p class="text-sm font-medium text-stone-800">${s.professor||'—'}</p>
+                   <p class="text-xs text-stone-400">${fmtShort(h.date)}</p></div>
+            </div>
             ${statusBadge(s.status)}</div>`;
         }).join('')
       : `<p class="text-sm text-stone-400 py-6 text-center italic">Sem registros ainda.<br>O histórico aparecerá aqui após cada EBD.</p>`;
@@ -1429,11 +1479,33 @@
     const c=APP.config.classes.find(x=>x.id===classId);
     const slot=APP.escalas[dateKey]?.[classId]||{professor:'',status:'pendente'};
     let _sel=slot.status;
+    const profNome = slot.professor||'';
+    const hasFoto = !!getProfPhoto(profNome);
     openSheet(`
       <h2 class="font-serif text-xl text-stone-900 mb-1">${c.emoji} ${c.label}</h2>
       <p class="text-sm text-stone-400 mb-5">${fmtDate(dateKey)}</p>
       <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">Professor(a)</label>
-      <input id="inp-professor" class="inp mb-5" placeholder="Nome do professor..." value="${slot.professor}" />
+      <input id="inp-professor" class="inp mb-3" placeholder="Nome do professor..." value="${profNome}"
+        oninput="updateSlotPhotoPreview()" />
+
+      <div id="slot-photo-area" class="mb-5">
+        ${profNome ? `
+        <div class="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl">
+          <div id="slot-avatar-preview">${avatarHTML(profNome, 44)}</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-stone-600 truncate">${profNome}</p>
+            <p class="text-xs text-stone-400">${hasFoto ? 'Foto cadastrada' : 'Sem foto — usando iniciais'}</p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="btn-ghost py-1 px-2 text-xs cursor-pointer text-center">
+              📷 ${hasFoto ? 'Trocar' : 'Foto'}
+              <input type="file" accept="image/*" class="hidden" onchange="handleSlotPhotoUpload(event)" />
+            </label>
+            ${hasFoto ? `<button onclick="removeSlotPhoto()" class="btn-ghost py-1 px-2 text-xs text-rose-500">🗑 Remover</button>` : ''}
+          </div>
+        </div>` : `<p class="text-xs text-stone-400 italic">Digite o nome para adicionar foto</p>`}
+      </div>
+
       <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-3">Status</label>
       <div class="grid grid-cols-2 gap-2 mb-6" id="status-options">
         ${['confirmado','pendente','disponivel','ausente'].map(s=>`
@@ -1445,6 +1517,69 @@
       </div>
       <button class="btn-primary" onclick="saveSlot('${dateKey}','${classId}')">Salvar Escala</button>
     `);
+  }
+
+  function updateSlotPhotoPreview() {
+    const nome = document.getElementById('inp-professor')?.value.trim()||'';
+    const area = document.getElementById('slot-photo-area');
+    if (!area) return;
+    const hasFoto = !!getProfPhoto(nome);
+    if (!nome) {
+      area.innerHTML = `<p class="text-xs text-stone-400 italic">Digite o nome para adicionar foto</p>`;
+      return;
+    }
+    area.innerHTML = `
+      <div class="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl">
+        <div id="slot-avatar-preview">${avatarHTML(nome, 44)}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-semibold text-stone-600 truncate">${nome}</p>
+          <p class="text-xs text-stone-400">${hasFoto ? 'Foto cadastrada' : 'Sem foto — usando iniciais'}</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="btn-ghost py-1 px-2 text-xs cursor-pointer text-center">
+            📷 ${hasFoto ? 'Trocar' : 'Foto'}
+            <input type="file" accept="image/*" class="hidden" onchange="handleSlotPhotoUpload(event)" />
+          </label>
+          ${hasFoto ? `<button onclick="removeSlotPhoto()" class="btn-ghost py-1 px-2 text-xs text-rose-500">🗑 Remover</button>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function handleSlotPhotoUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const nome = document.getElementById('inp-professor')?.value.trim();
+    if (!nome) { showToast('⚠ Digite o nome do professor primeiro'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      // Compress/resize to max 200x200 to keep storage small
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 200;
+        let w = img.width, h = img.height;
+        if (w > h) { if (w>MAX){h=Math.round(h*MAX/w);w=MAX;} }
+        else       { if (h>MAX){w=Math.round(w*MAX/h);h=MAX;} }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        saveProfPhoto(nome, dataUrl);
+        saveToStorage();
+        updateSlotPhotoPreview();
+        showToast('✓ Foto salva!');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeSlotPhoto() {
+    const nome = document.getElementById('inp-professor')?.value.trim();
+    if (!nome) return;
+    deleteProfPhoto(nome);
+    saveToStorage();
+    updateSlotPhotoPreview();
+    showToast('Foto removida');
   }
 
   let _slotStatus=null;
