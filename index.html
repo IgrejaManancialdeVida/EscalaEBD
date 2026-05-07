@@ -407,6 +407,17 @@
       </div>
 
       <div id="class-cards-container" class="space-y-3 fade-up delay-3"></div>
+
+      <!-- Botão de Configurações — sempre abaixo da última classe -->
+      <div class="mt-6 mb-2 fade-up" style="animation-delay:.3s">
+        <button onclick="openConfigAccess()" id="btn-config-access"
+          class="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-stone-300 text-stone-400 text-sm font-medium hover:border-stone-400 hover:text-stone-500 transition-all">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Configurações
+        </button>
+      </div>
     </section>
 
     <!-- ── TAB: POR MÊS ── -->
@@ -873,6 +884,54 @@
     } else {
       document.getElementById('pin-err').classList.remove('hidden');
       document.getElementById('pin-inp').value='';
+    }
+  }
+
+  /* ----------------------------------------------------------------
+     CONFIG ACCESS via button — asks PIN if not admin, then opens config
+  ---------------------------------------------------------------- */
+  function openConfigAccess() {
+    if (isAdmin()) {
+      // Already admin — go straight to config tab
+      const btn = document.getElementById('tab-btn-config');
+      switchTab('config', btn);
+      // Make sure the config tab is visible
+      document.getElementById('tab-config').classList.remove('hidden');
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      return;
+    }
+    // Not admin — request PIN
+    openSheet(`
+      <h2 class="font-serif text-xl text-stone-900 mb-1">Acesso às Configurações</h2>
+      <p class="text-sm text-stone-400 mb-5">Digite o PIN de administrador para continuar</p>
+      <label class="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2">PIN</label>
+      <input id="cfg-pin-inp" class="inp mb-2" type="password" placeholder="••••" maxlength="8" />
+      <p id="cfg-pin-err" class="text-xs text-rose-500 mb-4 hidden">PIN incorreto. Tente novamente.</p>
+      <button class="btn-primary" onclick="checkPinForConfig()">Entrar nas Configurações</button>
+    `);
+    setTimeout(()=>document.getElementById('cfg-pin-inp')?.focus(),300);
+  }
+
+  function checkPinForConfig() {
+    const val = document.getElementById('cfg-pin-inp').value;
+    if (val === (APP.config.adminPin||'1234')) {
+      currentMode = 'admin';
+      updateAdminVisibility();
+      closeSheet();
+      renderAll();
+      showToast('✓ Modo administrador ativado');
+      // Navigate to config tab
+      setTimeout(()=>{
+        const btn = document.getElementById('tab-btn-config');
+        switchTab('config', btn);
+        document.getElementById('tab-config').classList.remove('hidden');
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      }, 150);
+    } else {
+      document.getElementById('cfg-pin-err').classList.remove('hidden');
+      document.getElementById('cfg-pin-inp').value='';
     }
   }
 
